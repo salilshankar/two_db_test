@@ -9,7 +9,7 @@ defmodule TwoDbTest.Application do
   def start(_type, _args) do
     children = [
       # Start the Ecto repository
-      TwoDbTest.Repo,
+      TwoDbTest.Repo.MySql,
       # Start the Telemetry supervisor
       TwoDbTestWeb.Telemetry,
       # Start the PubSub system

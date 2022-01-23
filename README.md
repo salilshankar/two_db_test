@@ -98,6 +98,25 @@ To stick to the convention, I'll modify the file. Currently, it looks like:
     As expected, when we run `mix ecto.setup`, mix can create the database in MySQL.\
     ![phoenix mysql repo creates database](assets/screenshots/mysql_db_created.png)\
 
+    It says that there are no migrations. I'll save progress so far and add a table in commit #3.
+
+## Commit #3
+
+We'll add a table in this commit so that `ecto.setup` doesn't complain that you don't have any migrations. I'll run `mix ecto.gen.migration add_users` to add a dummy users table for this exercise.
+
+However, when I'll run `mix ecto.setup`, it'll create the table:\
+![phoenix creates the table but throws an error](assets/screenshots/table_and_failure.png)\
+
+But it throws this error. 🤦‍♂️\
+![phoenix application error](assets/screenshots/migration_failed.png)\
+
+So I configured everything except that I forgot to tell the application's supervisor that the ecto app is now in the module called `TwoDbTest.Repo.MySql`. To fix this problem, I need to open `lib/two_db_test/application.ex` and update the children array with the appropriate module name of the ecto app.
+
+This not necessarily directly related to what we're doing today(maybe it is), but I'm making a note of it since I can run into this in the future too (because I have run into this in the past 😂).
+
+And then when I run `mix ecto.setup`, everything will look okay.
+![all good!](assets/screenshots/mysql_all_okay.png)
+
 ## To start your Phoenix server
 
 - Install dependencies with `mix deps.get`
