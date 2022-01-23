@@ -8,7 +8,7 @@
 import Config
 
 config :two_db_test,
-  ecto_repos: [TwoDbTest.Repo]
+  ecto_repos: [TwoDbTest.Repo.MySql]
 
 # Configures the endpoint
 config :two_db_test, TwoDbTestWeb.Endpoint,

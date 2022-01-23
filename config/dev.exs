@@ -1,9 +1,9 @@
 import Config
 
 # Configure your database
-config :two_db_test, TwoDbTest.Repo,
-  username: "postgres",
-  password: "postgres",
+config :two_db_test, TwoDbTest.Repo.MySql,
+  username: "root",
+  password: "",
   database: "two_db_test_dev",
   hostname: "localhost",
   show_sensitive_data_on_connection_error: true,
