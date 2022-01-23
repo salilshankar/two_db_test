@@ -240,10 +240,37 @@ In this commit, we'll add a User controller in conjunction with the User schema 
 
 The two endpoints would be:
 
-- `post api/users`
+- `post api/user`
 - `get /users`
 
 The first endpoint takes a users object and writes it to DB. Maps to a simple JSON view in the `users_view.ex` file. The second endpoint returns an HTML template with the list of users that are there in DB, but returns HTML from `templates/users/index.html.heex` file. Rudimentary stuff, but works.
+
+> 📘 **Note**: We have commented out `plug Phoenix.Ecto.CheckRepoStatus, otp_app: :two_db_test` in the `code_reloading?` function of the `lib/two_db_test_web/endpoint.ex` file since it checks for repo status but the `EctoXandra` driver that we're using for ScyllaDB doesn't currently support it and throws an error.
+
+## Commit #6
+
+The last bit of this exercise would be to add API endpoints that can read/write to ScyllaDB. Like last commit, we'll add two endpoints:
+
+- `post /api/product`
+- `get /products`
+
+Like the previous endpoints, we'll use the first endpoint to write to ScyllaDB and use the second one to read from it. In addition, we'll have to create corresponding schemas (models) and views.
+
+### Sample uses
+
+We can now send data to the `post /api/user` and it'll write to the MySQL DB.
+![Phoenix writes to MySQL](assets/screenshots/post_user.png)
+
+And the `post /api/product` endpoint will write to ScyllaDB.
+![Phoenix writes to ScyllaDB](assets/screenshots/post_product.png)
+
+Similarly, `get /users` fetches users from MySQL.
+![Phoenix reads from MySQL](assets/screenshots/get_users.png)
+
+and `get /products` fetches products from ScyllaDB.
+![Phoenix reads from Scylla](assets/screenshots/get_products.png)
+
+And that's how we can make Phoenix talk to multiple databases.
 
 ## To start your Phoenix server
 

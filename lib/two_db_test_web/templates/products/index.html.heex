@@ -1,0 +1,9 @@
+<h5>List of products</h5>
+
+<ul class="collection">
+  <%= for product <- @products do %>
+    <li class="collection-item">
+      Product: <strong><%= "#{product.title}" %></strong>&nbsp;Category:<strong><%= " #{product.category}" %></strong>
+    </li>
+  <% end %>
+</ul>

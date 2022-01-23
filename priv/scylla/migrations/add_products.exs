@@ -24,7 +24,7 @@ defmodule Scylla.Migrations.AddProducts do
         created_at timestamp,
         title text,
         price decimal,
-        inventory bigint,
+        inventory int,
         category text,
         availability text,
         brand text,
