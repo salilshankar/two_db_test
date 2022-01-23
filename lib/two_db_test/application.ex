@@ -10,6 +10,7 @@ defmodule TwoDbTest.Application do
     children = [
       # Start the Ecto repository
       TwoDbTest.Repo.MySql,
+      TwoDbTest.Repo.Scylla,
       # Start the Telemetry supervisor
       TwoDbTestWeb.Telemetry,
       # Start the PubSub system

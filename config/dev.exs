@@ -9,6 +9,16 @@ config :two_db_test, TwoDbTest.Repo.MySql,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
+config :two_db_test, TwoDbTest.Repo.Scylla,
+  keyspace: "two_db_test_dev",
+  nodes: ["127.0.0.1:10042"],
+  telemetry_prefix: [:repo],
+  protocol_version: :v4,
+  pool_size: 10,
+  default_consistency: :quorum,
+  retry_count: 5,
+  log_level: :debug
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

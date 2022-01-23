@@ -96,7 +96,7 @@ To stick to the convention, I'll modify the file. Currently, it looks like:
     - `run priv/repo/seeds.exs`: If you have sample data that your tables should be populated with, you can use this file to provide the data
 
     As expected, when we run `mix ecto.setup`, mix can create the database in MySQL.\
-    ![phoenix mysql repo creates database](assets/screenshots/mysql_db_created.png)\
+    ![phoenix mysql repo creates database](assets/screenshots/mysql_db_created.png)
 
     It says that there are no migrations. I'll save progress so far and add a table in commit #3.
 
@@ -105,10 +105,10 @@ To stick to the convention, I'll modify the file. Currently, it looks like:
 We'll add a table in this commit so that `ecto.setup` doesn't complain that you don't have any migrations. I'll run `mix ecto.gen.migration add_users` to add a dummy users table for this exercise.
 
 However, when I'll run `mix ecto.setup`, it'll create the table:\
-![phoenix creates the table but throws an error](assets/screenshots/table_and_failure.png)\
+![phoenix creates the table but throws an error](assets/screenshots/table_and_failure.png)
 
 But it throws this error. 🤦‍♂️\
-![phoenix application error](assets/screenshots/migration_failed.png)\
+![phoenix application error](assets/screenshots/migration_failed.png)
 
 So I configured everything except that I forgot to tell the application's supervisor that the ecto app is now in the module called `TwoDbTest.Repo.MySql`. To fix this problem, I need to open `lib/two_db_test/application.ex` and update the children array with the appropriate module name of the ecto app.
 
@@ -116,6 +116,119 @@ This not necessarily directly related to what we're doing today(maybe it is), bu
 
 And then when I run `mix ecto.setup`, everything will look okay.
 ![all good!](assets/screenshots/mysql_all_okay.png)
+
+## Commit #4
+
+Now that we have configured Phoenix to connect to MySQL, we'll configure it to connect to ScyllaDB. Like Last time, we'll get started with the driver. Since there's no official Ecto driver for Scylla(or Cassandra), we'll use the driver called [EctoXandra](https://github.com/blueshift-labs/ecto_xandra) that the good folks at Blueshift (my current employer 😊) have written.
+
+Like earlier, we'll go to the `mix.exs` file and add the driver (`{:ecto_xandra, git: "https://github.com/blueshift-labs/ecto_xandra.git", tag: "0.1.9"}`) in the list of dependencies.
+
+However, if ElixirLS goes crazy on your `mix.exs` file this time, it's possible that you may have to run `mix deps.unlock --all` before running `mix deps.get` to get it to work.
+
+Next, like last time, we need to configure the repos in the `config.exs` file. We'll change:
+
+```elixir
+config :two_db_test,
+  ecto_repos: [TwoDbTest.Repo.MySql]
+```
+
+to
+
+```elixir
+config :two_db_test,
+  ecto_repos: [TwoDbTest.Repo.MySql, TwoDbTest.Repo.Scylla]
+```
+
+Remember that we discussed that the `ecto_repos` property takes an array? This is where this will come in handy. Now, since there's no such module called `TwoDbTest.Repo.Scylla`, we'll create one.
+
+![create scylla repo module](assets/screenshots/scylla_repo.png)
+
+And we'll set its contents to:
+
+```elixir
+defmodule TwoDbTest.Repo.Scylla do
+  use Ecto.Repo,
+    otp_app: :two_db_test,
+    adapter: EctoXandra
+end
+```
+
+Like last time, next step would be to tell Phoenix what should be the name of the database in Scylla under which it should create tables and add data to it. As we discussed earlier, Phoenix separates the operation modes as dev, test, and prod, it provides a script(.exs) file for each mode. Since I'll be only running Phoenix in dev mode on my laptop for this exercise, we'll specify the database name in the dev.exs file only.
+
+In the dev.exs file, I'll add config for Scylla:
+
+```elixir
+config :two_db_test, TwoDbTest.Repo.Scylla,
+  keyspace: "two_db_test_dev",
+  nodes: ["127.0.0.1:10042"],
+  telemetry_prefix: [:repo],
+  protocol_version: :v4,
+  pool_size: 10,
+  default_consistency: :quorum,
+  retry_count: 5,
+  log_level: :debug
+```
+
+Note that I'm not super sure of all the properties except keyspace and nodes... so I have copy-pasted configs from what I got from nice folks at Blueshift.
+
+I'll try to run mix ecto.setup again, just to see if Mix can create the keyspace in ScyllaDB.
+
+And luckily for us, it very well can.
+![scylla keyspace created](assets/screenshots/scylla_create_db.png)
+
+The next step can be tricky, since standard ecto migrations do not work with Scylla. So we'll create an Elixir script `.exs` file manually, unlike last time when we ran `mix ecto.gen.migration <migration>`.
+
+In the `priv` directory, I'll add `scylla/migration` path, and a file called `add_products.exs`. This file will create a dummy products table in Scylla. You can review the commit to see the table and the commands it'll run. (Honestly, I'm not super sure about Scylla and its commands either, so I'm kinda blindly following what good folks at Blueshift did. 😜)
+
+Now that we have specified the migrations for Scylla, we'll have to change a few things in the `mix.exs` file. Right at the bottom, Phoenix generates aliases that specify what needs to be done when you run certain mix commands. We'll have to change that. 
+
+So from:
+
+```elixir
+defp aliases do
+  [
+    setup: ["deps.get", "ecto.setup"],
+    "ecto.setup": [
+      "ecto.create",
+      "ecto.migrate",
+      "run priv/repo/seeds.exs"
+    ],
+    "ecto.reset": ["ecto.drop", "ecto.setup"],
+    test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+    "assets.deploy": ["esbuild default --minify", "phx.digest"]
+  ]
+end
+```
+
+we'll change it to:
+
+```elixir
+defp aliases do
+  [
+    setup: ["deps.get", "ecto.setup"],
+    "ecto.setup": [
+      "ecto.create",
+      "run priv/scylla/migrations/add_products.exs",
+      "ecto.migrate -r TwoDbTest.Repo.MySql",
+      "run priv/repo/seeds.exs"
+    ],
+    "ecto.reset": ["ecto.drop", "ecto.setup"],
+    test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+    "assets.deploy": ["esbuild default --minify", "phx.digest"]
+  ]
+end
+```
+
+Note that after `"ecto.create"`, we have added `"run priv/scylla/migrations/add_products.exs"`, and we have changed `"ecto.migrate"` to `:"ecto.migrate -r TwoDbTest.Repo.MySql"`. We're doing this to:
+
+1. Run the migration script for Scylla manually.
+2. Ensure that Ecto only migrates the database for MySQL otherwise Ecto will try to migrate ScyllaDB too but that'll run into issues.
+
+At this point, we've successfully connected our Phoenix repo to two databases. I'll save the changes at this point. In the next commit:
+
+- We'll write two APIs (one each for each DB)
+- Use those APIs to write to the databases
+- Write views that read from the two databases
 
 ## To start your Phoenix server
 
@@ -129,8 +242,8 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
 
 ## Learn more
 
-- Official website: https://www.phoenixframework.org/
-- Guides: https://hexdocs.pm/phoenix/overview.html
-- Docs: https://hexdocs.pm/phoenix
-- Forum: https://elixirforum.com/c/phoenix-forum
-- Source: https://github.com/phoenixframework/phoenix
+- [Official website](https://www.phoenixframework.org/)
+- [Guides](https://hexdocs.pm/phoenix/overview.html)
+- [Docs](https://hexdocs.pm/phoenix)
+- [Forum:](https://elixirforum.com/c/phoenix-forum)
+- [Source](https://github.com/phoenixframework/phoenix)
