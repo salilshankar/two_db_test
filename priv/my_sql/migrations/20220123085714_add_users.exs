@@ -4,8 +4,8 @@ defmodule TwoDbTest.Repo.MySql.Migrations.AddUsers do
   def change do
     create table(:users) do
       add :email, :string
-      add :provider, :string
-      add :token, :string
+      add :firstname, :string
+      add :lastname, :string
 
       timestamps()
     end

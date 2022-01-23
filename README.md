@@ -139,6 +139,8 @@ config :two_db_test,
   ecto_repos: [TwoDbTest.Repo.MySql, TwoDbTest.Repo.Scylla]
 ```
 
+In addition, we'll have to tell the application's supervisor that there's another ecto app called `TwoDbTest.Repo.Scylla`. So we need to open `lib/two_db_test/application.ex` and add the module name of the ecto app under children.
+
 Remember that we discussed that the `ecto_repos` property takes an array? This is where this will come in handy. Now, since there's no such module called `TwoDbTest.Repo.Scylla`, we'll create one.
 
 ![create scylla repo module](assets/screenshots/scylla_repo.png)
@@ -180,7 +182,7 @@ The next step can be tricky, since standard ecto migrations do not work with Scy
 
 In the `priv` directory, I'll add `scylla/migration` path, and a file called `add_products.exs`. This file will create a dummy products table in Scylla. You can review the commit to see the table and the commands it'll run. (Honestly, I'm not super sure about Scylla and its commands either, so I'm kinda blindly following what good folks at Blueshift did. 😜)
 
-Now that we have specified the migrations for Scylla, we'll have to change a few things in the `mix.exs` file. Right at the bottom, Phoenix generates aliases that specify what needs to be done when you run certain mix commands. We'll have to change that. 
+Now that we have specified the migrations for Scylla, we'll have to change a few things in the `mix.exs` file. Right at the bottom, Phoenix generates aliases that specify what needs to be done when you run certain mix commands. We'll have to change that.
 
 So from:
 
@@ -230,6 +232,19 @@ At this point, we've successfully connected our Phoenix repo to two databases. I
 - Use those APIs to write to the databases
 - Write views that read from the two databases
 
+## Commit #5
+
+Now that we have connected our Phoenix repo to two running databases, let's add some functionality to leverage it. We'll add two API endpoints that correspond to two views.
+
+In this commit, we'll add a User controller in conjunction with the User schema two User views. The users table is present in MySQL, so Phoenix will write to and read from the MySQL table.
+
+The two endpoints would be:
+
+- `post api/users`
+- `get /users`
+
+The first endpoint takes a users object and writes it to DB. Maps to a simple JSON view in the `users_view.ex` file. The second endpoint returns an HTML template with the list of users that are there in DB, but returns HTML from `templates/users/index.html.heex` file. Rudimentary stuff, but works.
+
 ## To start your Phoenix server
 
 - Install dependencies with `mix deps.get`
@@ -245,5 +260,5 @@ Ready to run in production? Please [check our deployment guides](https://hexdocs
 - [Official website](https://www.phoenixframework.org/)
 - [Guides](https://hexdocs.pm/phoenix/overview.html)
 - [Docs](https://hexdocs.pm/phoenix)
-- [Forum:](https://elixirforum.com/c/phoenix-forum)
+- [Forum](https://elixirforum.com/c/phoenix-forum)
 - [Source](https://github.com/phoenixframework/phoenix)

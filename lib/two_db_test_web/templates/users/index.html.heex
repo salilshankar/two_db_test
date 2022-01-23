@@ -1,0 +1,9 @@
+<h5>List of users</h5>
+
+<ul class="collection">
+  <%= for user <- @users do %>
+    <li class="collection-item">
+      Name: <strong><%= "#{user.firstname} #{user.lastname}" %></strong>
+    </li>
+  <% end %>
+</ul>

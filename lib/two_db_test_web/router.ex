@@ -18,12 +18,15 @@ defmodule TwoDbTestWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
+    get "/users", UsersController, :index
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", TwoDbTestWeb do
-  #   pipe_through :api
-  # end
+  scope "/api", TwoDbTestWeb do
+    pipe_through :api
+
+    post "/user", UsersController, :create
+  end
 
   # Enables LiveDashboard only for development
   #
